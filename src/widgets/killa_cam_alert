@@ -1,0 +1,177 @@
+import 'package:flutter/material.dart';
+import 'package:killa_cam/src/blocs/auth_bloc.dart';
+import 'package:provider/provider.dart';
+
+import 'killa_cam_text_field.dart';
+
+abstract class KillaCamAlert {
+  static Future<void> showErrorDialog(
+      BuildContext context, String? errorMessage) async {
+    final authBloc = Provider.of<AuthBloc>(context, listen: false);
+    return showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text(
+              'Error',
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: [
+                  Text(
+                    errorMessage as String,
+                    style: const TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  'Okay',
+                  style: TextStyle(
+                    color: Colors.deepPurple,
+                  ),
+                ),
+                onPressed: () {
+                  authBloc.clearErrorMessage();
+                  Navigator.of(context).pop();
+                },
+              )
+            ],
+          );
+        });
+  }
+
+  static Future<void> showCodeConfirmationDialog(
+      BuildContext context, AuthBloc authBloc) async {
+    return showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Verify Phone Number',
+                style: TextStyle(color: Colors.white)),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: [
+                  const Text(
+                    'A confirmation code has been sent to your phone, enter to continue',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                  StreamBuilder<String>(
+                      stream: authBloc.confirmationCode,
+                      builder: (context, snapshot) {
+                        return KillaCamTextField(
+                          onChanged: authBloc.changeConfirmationCode,
+                          textInputType: TextInputType.number,
+                          errorText: snapshot.error as String,
+                        );
+                      })
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Colors.deepPurple,
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: const Text(
+                  'Submit',
+                  style: TextStyle(color: Colors.deepPurple),
+                ),
+                onPressed: () => authBloc.submitSMSCode(),
+              )
+            ],
+          );
+        });
+  }
+
+  static Future<void> showAutomaticConfirmationDialog(
+      BuildContext context, AuthBloc authBloc) async {
+    return showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text(
+              'Verified',
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: const [
+                  Text(
+                      'Your phone is equipped with automated verification, you may ignore the verification text',
+                      style: TextStyle(color: Colors.white))
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  'Okay',
+                  style: TextStyle(color: Colors.deepPurple),
+                ),
+                onPressed: () {
+                  authBloc.changeShowAutomatedConfirmationDialog(false);
+                  Navigator.of(context).pop();
+                },
+              )
+            ],
+          );
+        });
+  }
+
+  static Future<void> showEmailVerifyNotice(
+      BuildContext context, String? email) async {
+    //Default Value if no email submitted
+    if (email == null) email = 'your email address';
+
+    return showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title:
+                const Text('Verified', style: TextStyle(color: Colors.white)),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: [
+                  Text(
+                      'We\'ve sent a message to $email.  Please open to verify your email address',
+                      style: const TextStyle(color: Colors.white))
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  'Okay',
+                  style: TextStyle(color: Colors.deepPurple),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              )
+            ],
+          );
+        });
+  }
+}
