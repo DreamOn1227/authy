@@ -1,0 +1,31 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:killa_cam/src/models/killa_cam_user.dart';
+
+class FirestoreService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  Future<void> setUser(KillaCamUser user) {
+    return _db.collection('users').doc(user.userId).set(user.toMap());
+  }
+
+  Future<void> updateEmailVerified({
+    required String userId,
+    required String email,
+    required String displayName,
+    required bool verified,
+  }) async {
+    _db.collection('users').doc(userId).update({
+      'verified': verified,
+      'display_name': displayName,
+      'email': email,
+    });
+  }
+
+  Future<KillaCamUser> getUser(String userId) {
+    return _db.collection('users').doc(userId).get().then(
+          (snapshot) => KillaCamUser.fromJson(
+            snapshot.data(),
+          ),
+        );
+  }
+}
