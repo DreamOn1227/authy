@@ -1,0 +1,123 @@
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:killa_cam/src/blocs/auth_bloc.dart';
+import 'package:killa_cam/src/screens/verification_waiting_screen.dart';
+import 'package:killa_cam/src/widgets/killa_cam_alert.dart';
+import 'package:killa_cam/src/widgets/killa_cam_button.dart';
+import 'package:killa_cam/src/widgets/killa_cam_text_field.dart';
+import 'package:provider/provider.dart';
+
+import 'log_in_screen.dart';
+
+class VerifyScreen extends StatefulWidget {
+  final String? email;
+
+  const VerifyScreen({
+    Key? key,
+    required this.email,
+  }) : super(key: key);
+
+  @override
+  _VerifyScreenState createState() => _VerifyScreenState();
+}
+
+class _VerifyScreenState extends State<VerifyScreen> {
+  @override
+  void initState() {
+    final authBloc = Provider.of<AuthBloc>(context, listen: false);
+    authBloc.changeName('');
+    authBloc.changeEmail(widget.email as String);
+
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authBloc = Provider.of<AuthBloc>(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+              icon: const Icon(FontAwesomeIcons.signOutAlt),
+              onPressed: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const LogInScreen(),
+                  ),
+                );
+                authBloc.signOut();
+              })
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Additional Info Needed',
+                  style: Theme.of(context).textTheme.subtitle1!.copyWith(
+                        color: Colors.white,
+                      ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(15.0),
+                  child: Text(
+                    'Please provide additional info to complete your profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                if (widget.email == null)
+                  StreamBuilder<String>(
+                      stream: authBloc.email,
+                      builder: (context, snapshot) {
+                        return KillaCamTextField(
+                          label: 'Email',
+                          textInputType: TextInputType.emailAddress,
+                          onChanged: authBloc.changeEmail,
+                          errorText: snapshot.error as String,
+                        );
+                      }),
+                StreamBuilder<String>(
+                    stream: authBloc.name,
+                    builder: (context, snapshot) {
+                      return KillaCamTextField(
+                        label: 'Full Name',
+                        onChanged: authBloc.changeName,
+                        textCapitalization: TextCapitalization.words,
+                        errorText: snapshot.error as String,
+                      );
+                    }),
+              ],
+            ),
+          ),
+          StreamBuilder<bool>(
+              stream: authBloc.isVerifyValid,
+              builder: (context, snapshot) {
+                print(snapshot.data);
+                return KillaCamButton(
+                  text: 'Submit',
+                  enabled: (snapshot.data == true) ? true : false,
+                  onTap: () {
+                    KillaCamAlert.showEmailVerifyNotice(context, widget.email);
+                    authBloc.verifyEmail();
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => VerificationWaitingScreen(
+                          email: widget.email,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              })
+        ],
+      ),
+    );
+  }
+}
