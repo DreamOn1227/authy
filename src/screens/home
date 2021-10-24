@@ -1,0 +1,82 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:killa_cam/src/blocs/auth_bloc.dart';
+import 'package:killa_cam/src/models/killa_cam_user.dart';
+import 'package:killa_cam/src/widgets/killa_cam_alert.dart';
+import 'package:provider/provider.dart';
+
+import 'log_in_screen.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late StreamSubscription _userSubscription;
+  late StreamSubscription _showAutomatedVerificationSubscription;
+
+  @override
+  void initState() {
+    final authBloc = Provider.of<AuthBloc>(context, listen: false);
+
+    _userSubscription = authBloc.user.listen((user) {
+      if (user == null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const LogInScreen(),
+          ),
+        );
+      }
+    });
+
+    _showAutomatedVerificationSubscription =
+        authBloc.showAutomatedConfirmationDialog.listen((event) {
+      if (event == true) {
+        KillaCamAlert.showAutomaticConfirmationDialog(context, authBloc);
+      }
+    });
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _userSubscription.cancel();
+    _showAutomatedVerificationSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authBloc = Provider.of<AuthBloc>(context);
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+              icon: const Icon(FontAwesomeIcons.signOutAlt),
+              onPressed: () => authBloc.signOut())
+        ],
+      ),
+      body: Center(
+        child: StreamBuilder<KillaCamUser>(
+            stream: authBloc.user,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const CircularProgressIndicator();
+              return Text(
+                'Welcome ${snapshot.data?.displayName}',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyText1!
+                    .copyWith(color: Colors.white),
+              );
+            }),
+      ),
+    );
+  }
+}
