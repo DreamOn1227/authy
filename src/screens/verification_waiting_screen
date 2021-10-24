@@ -1,0 +1,87 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:killa_cam/src/blocs/auth_bloc.dart';
+import 'package:provider/provider.dart';
+
+import 'home.dart';
+import 'log_in_screen.dart';
+
+class VerificationWaitingScreen extends StatefulWidget {
+  const VerificationWaitingScreen({
+    Key? key,
+    required this.email,
+  }) : super(key: key);
+
+  final String? email;
+
+  @override
+  _VerificationWaitingScreenState createState() =>
+      _VerificationWaitingScreenState();
+}
+
+class _VerificationWaitingScreenState extends State<VerificationWaitingScreen> {
+  late StreamSubscription _verificationSubscription;
+  @override
+  void initState() {
+    final authBloc = Provider.of<AuthBloc>(context, listen: false);
+
+    //Listen for email verification
+    _verificationSubscription = authBloc.emailVerified.listen((verified) {
+      if (verified) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const HomeScreen(),
+          ),
+        );
+      }
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _verificationSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(
+              FontAwesomeIcons.signOutAlt,
+            ),
+            onPressed: () => Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const LogInScreen(),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Center(
+                child: Text(
+              'We\'ve sent a message to ${widget.email}.  Please open to verify your email address',
+              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            )),
+          ),
+          const SizedBox(
+            height: 35.0,
+          ),
+          const CircularProgressIndicator()
+        ],
+      ),
+    );
+  }
+}
