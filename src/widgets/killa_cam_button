@@ -1,0 +1,41 @@
+import 'package:flutter/material.dart';
+
+class KillaCamButton extends StatelessWidget {
+  const KillaCamButton({
+    Key? key,
+    this.enabled = true,
+    this.onTap,
+    required this.text,
+  }) : super(key: key);
+
+  final String text;
+  final VoidCallback? onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: (enabled) ? onTap : null,
+      child: Container(
+        width: double.infinity,
+        height: 85.0,
+        color: (enabled) ? Colors.deepPurple : Colors.grey,
+        child: Center(
+          child: Column(
+            children: [
+              const SizedBox(
+                height: 15.0,
+              ),
+              Text(
+                text,
+                style: Theme.of(context).textTheme.headline4!.copyWith(
+                      color: Colors.white,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
