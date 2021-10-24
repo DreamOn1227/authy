@@ -1,0 +1,141 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:killa_cam/src/blocs/auth_bloc.dart';
+import 'package:killa_cam/src/screens/verify_screen.dart';
+import 'package:killa_cam/src/widgets/killa_cam_alert.dart';
+import 'package:killa_cam/src/widgets/killa_cam_button.dart';
+import 'package:killa_cam/src/widgets/killa_cam_text_field.dart';
+import 'package:loading_overlay/loading_overlay.dart';
+import 'package:provider/provider.dart';
+
+import 'home.dart';
+import 'log_in_screen.dart';
+
+class SignInEmailScreen extends StatefulWidget {
+  const SignInEmailScreen({Key? key}) : super(key: key);
+
+  @override
+  _SignInEmailScreenState createState() => _SignInEmailScreenState();
+}
+
+class _SignInEmailScreenState extends State<SignInEmailScreen> {
+  late StreamSubscription _errorMessageSubscription;
+  late StreamSubscription _processRunningSubscription;
+  late StreamSubscription _userSubscription;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    final authBloc = Provider.of<AuthBloc>(context, listen: false);
+    authBloc.clearValues();
+
+    _errorMessageSubscription = authBloc.errorMessage.listen((errorMessage) {
+      if (errorMessage != '') {
+        KillaCamAlert.showErrorDialog(context, errorMessage);
+      }
+    });
+
+    _processRunningSubscription = authBloc.processRunning.listen((running) {
+      if (running != null) {
+        setState(() {
+          _isLoading = running;
+        });
+      }
+    });
+
+    _userSubscription = authBloc.user.listen((user) {
+      if (user != null) if (user.verified == true) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const HomeScreen(),
+          ),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (context) => VerifyScreen(
+                  email: user.email,
+                )));
+      }
+    });
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _errorMessageSubscription.cancel();
+    _processRunningSubscription.cancel();
+    _userSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authBloc = Provider.of<AuthBloc>(context);
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0.0,
+        leading: IconButton(
+          icon: const Icon(
+            FontAwesomeIcons.solidArrowAltCircleLeft,
+            size: 45.0,
+            color: Colors.deepPurple,
+          ),
+          onPressed: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const LogInScreen(),
+            ),
+          ),
+        ),
+      ),
+      body: LoadingOverlay(
+        isLoading: _isLoading,
+        child: Column(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  StreamBuilder<String>(
+                      stream: authBloc.email,
+                      builder: (context, snapshot) {
+                        return KillaCamTextField(
+                          label: 'Email',
+                          textInputType: TextInputType.emailAddress,
+                          onChanged: authBloc.changeEmail,
+                          errorText: snapshot.error as String,
+                        );
+                      }),
+                  StreamBuilder<String>(
+                      stream: authBloc.password,
+                      builder: (context, snapshot) {
+                        return KillaCamTextField(
+                          label: 'Password',
+                          obscureText: true,
+                          onChanged: authBloc.changePassword,
+                          errorText: snapshot.error as String,
+                        );
+                      }),
+                ],
+              ),
+            ),
+            StreamBuilder<bool>(
+                stream: authBloc.isEmailSignInValid,
+                builder: (context, snapshot) {
+                  print(snapshot.data);
+                  return KillaCamButton(
+                    text: 'Sign in',
+                    enabled: (snapshot.data == true) ? true : false,
+                    onTap: authBloc.signInEmail,
+                  );
+                })
+          ],
+        ),
+      ),
+    );
+  }
+}
